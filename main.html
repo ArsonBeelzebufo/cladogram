@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Cladogram</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            *{
+                margin:0;
+            }
+            html,body{
+                height:100%;
+            }
+            .header{
+                height:10%;
+                background-color:#333333;
+            }
+            .cladogram{
+                position:relative;
+                width:80%;
+                height:60%;
+                background-color:#555555;
+            }
+            .assembler{
+                position:relative;
+                width:80%;
+                height:30%;
+                background-color:#333333;
+            }
+            .shiftstick{
+                position:absolute;
+                width:20%;
+                height:90%;
+                bottom:0%;
+                right:0%;
+                background-color:#444444;
+                overflow:auto;
+            }
+            .shiftbutton{
+                margin-top:5%;
+                margin-left:5%;
+                width:90%;
+                height:10%;
+                background-color:#555555;
+                font-family:"courier new";
+                font-size:5vh;
+                color:#FFFFFF;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            .form{
+                position:absolute;
+                background-color:#666666;
+                font-family:"courier new";
+                font-size:2vh;
+                color:#FFFFFF;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header"></div>
+        <div class="cladogram" id="field"></div>
+        <div class="assembler" id="machine"></div>
+        <div class="shiftstick" id="stick">
+        </div>
+    </body>
+    <script>
+        var button=0;
+        var nForms,nShifters;
+        function shift(element){
+            if(button!=0){document.getElementById("button"+button.toString()).style.backgroundColor="#555555";}
+            if(button!=element.id[6]){
+                button=parseInt(element.id[6]);
+                element.style.backgroundColor="#333333";
+            }else{
+                button=0;
+                element.style.backgroundColor="#555555";
+            }
+        }
+        function createForm(text,id,top,left,width,height){
+            var form=document.createElement("div");
+            form.innerHTML=text;
+            form.setAttribute("class","form");
+            form.setAttribute("id","form"+id.toString());
+            form.setAttribute("onmousedown","dragForm(this,event)");
+            form.setAttribute("ondblclick","duplicate(this)");
+            form.setAttribute("oncontextmenu","destroy(this,event)");
+            document.getElementById("field").appendChild(form);
+            form.style.top=top.toString()+"%";
+            form.style.left=left.toString()+"%";
+            form.style.width=width.toString()+"%";
+            form.style.height=height.toString()+"%";
+        }
+        function dragForm(element,event){
+            mouseDown(event);
+            var x,y,newx,newy;
+            function mouseDown(e){
+                e=e||window.event;
+                e.preventDefault();
+                x=e.clientX;
+                y=e.clientY;
+                document.onmousemove=mouseMove;
+                document.onmouseup=mouseUp;
+            }
+            function mouseMove(e){
+                e=e||window.event;
+                e.preventDefault();
+                newy=(element.offsetTop+e.clientY-y)/element.parentElement.offsetHeight*100;
+                newx=(element.offsetLeft+e.clientX-x)/element.parentElement.offsetWidth*100;
+                x=e.clientX;
+                y=e.clientY;
+                if((0<=newx&&newx<=100-parseFloat(element.style.width)&&0<=newy&&newy<=100-parseFloat(element.style.height))||(parseFloat(element.style.left)<0||parseFloat(element.style.left)+parseFloat(element.style.width)>100||parseFloat(element.style.top)<0||parseFloat(element.style.top)+parseFloat(element.style.height)>100)){
+                    element.style.top=newy.toString()+"%";
+                    element.style.left=newx.toString()+"%";
+                }else{
+                    document.onmousemove=null;
+                    document.onmouseup=null;
+                }
+            }
+            function mouseUp(){
+                document.onmousemove=null;
+                document.onmouseup=null;
+            }
+        }
+        function createShifter(id,initial,final){
+            var shifter=document.createElement("div");
+            shifter.innerHTML=initial+" -> "+final;
+            shifter.setAttribute("class","shiftbutton");
+            shifter.setAttribute("onclick","shift(this)");
+            shifter.setAttribute("id","button"+id.toString());
+            document.getElementById("stick").appendChild(shifter);
+        }
+        function duplicate(element){
+            createForm( element.innerHTML,
+                        nForms,
+                        parseFloat(element.style.top)-5,
+                        parseFloat(element.style.left)-5,
+                        parseFloat(element.style.width),
+                        parseFloat(element.style.height));
+            nForms++;
+        }
+        function destroy(element,e){
+            e=e||window.event;
+            e.preventDefault();
+            var troubleID=parseInt(element.id.slice(4));
+            field=document.getElementById("field").children;
+            for(var i=0;i<field.length;i++){
+                var child=field[i];
+                if(child.id.slice(0,4)=="form"){
+                    var oID=parseInt(child.id.slice(4));
+                    if(oID>troubleID){
+                        child.setAttribute("id","form"+(oID-1).toString());
+                    }
+                }
+            }
+            nForms--;
+            element.remove();
+        }
+        function init(){
+            var forms=["abce","ahce","fbce","agci","jgcd"];
+            nForms=forms.length;
+            forms.forEach(function(form,index,array){
+                createForm(form,index,41+12*(array.length/2-index),60,4,6);
+            });
+            var shifters=[["d","e"],["a","f"],["b","g"],["b","h"],["d","i"],["a","j"]];
+            nShifters=shifters.length;
+            shifters.forEach(function(shifter,index){
+                createShifter(index+1,shifter[0],shifter[1]);
+            });
+        }init();
+    </script>
+</html>
