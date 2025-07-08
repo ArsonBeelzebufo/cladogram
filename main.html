@@ -22,7 +22,9 @@
                 background-color:#555555;
             }
             .assembler{
-                position:relative;
+                position:absolute;
+                bottom:0;
+                left:0;
                 width:80%;
                 height:30%;
                 background-color:#333333;
@@ -34,7 +36,7 @@
                 bottom:0%;
                 right:0%;
                 background-color:#444444;
-                overflow:auto;
+                overflow-y:scroll;
             }
             .shiftbutton{
                 margin-top:5%;
@@ -74,11 +76,68 @@
         </style>
     </head>
     <body>
-        <div class="header"></div>
+        <div class="header">
+            <img src="cobweb.png" style="   position:absolute;
+                                            height:8vh;
+                                            width:8vh;
+                                            top:1vh;
+                                            right:1vh;"
+                onclick="webmode()"></div>
+        <div class="assembler" id="machine">
+            <div id="paradigm" style="  position:absolute;
+                                        left:50%;
+                                        top:50%;
+                                        transform:translate(-50%,-200%);
+                                        font-family:courier new;
+                                        font-size:3vh;
+                                        color:#FFFFFF;
+                                        -webkit-touch-callout: none;
+                                        -webkit-user-select: none;
+                                        -khtml-user-select: none;
+                                        -moz-user-select: none;
+                                        -ms-user-select: none;
+                                        user-select: none;"></div>
+            <div id="arrow" style=" position:absolute;
+                                    left:50%;
+                                    top:50%;
+                                    transform:translate(-50%,-50%);
+                                    font-family:courier new;
+                                    font-size:10vh;
+                                    color:#FFFFFF;
+                                    -webkit-touch-callout: none;
+                                    -webkit-user-select: none;
+                                    -khtml-user-select: none;
+                                    -moz-user-select: none;
+                                    -ms-user-select: none;
+                                    user-select: none;"></div>
+            <div id="roots" style=" width:28vw;
+                                    height:30vh;
+                                    overflow-y:scroll;
+                                    position:absolute;
+                                    border-right:0px"></div>
+            <div id="branch" style="position:absolute;
+                                    left:50%;
+                                    top:50%;
+                                    width:6vw;
+                                    height:7vh;
+                                    background-color:#444444;
+                                    transform:translate(200%,-50%);
+                                    visibility:hidden;
+                                    font-family:courier new;
+                                    font-size:4vh;
+                                    color:#FFFFFF;
+                                    display:flex;
+                                    justify-content:center;
+                                    align-items:center;
+                                    -webkit-touch-callout: none;
+                                    -webkit-user-select: none;
+                                    -khtml-user-select: none;
+                                    -moz-user-select: none;
+                                    -ms-user-select: none;
+                                    user-select: none;"
+                onclick="change(this)"></div></div>
+        <div class="shiftstick" id="stick"></div>
         <div class="cladogram" id="field"></div>
-        <div class="assembler" id="machine"></div>
-        <div class="shiftstick" id="stick">
-        </div>
     </body>
     <script>
         var button=0;
@@ -88,24 +147,56 @@
             if(button!=element.id[6]){
                 button=parseInt(element.id[6]);
                 element.style.backgroundColor="#333333";
-            }else{
+                document.getElementById("paradigm").innerHTML=element.innerHTML;
+                document.getElementById("arrow").innerHTML="-----&gt;";
+                resetBranch();
+                document.getElementById("branch").style.visibility="visible";
+                document.getElementById("roots").style.borderRight="2px solid #666666";
+                destroyExForms();
+            }else{  
                 button=0;
                 element.style.backgroundColor="#555555";
+                document.getElementById("paradigm").innerHTML="";
+                document.getElementById("arrow").innerHTML="";
+                resetBranch();
+                document.getElementById("roots").style.borderRight="0px";
+                destroyExForms();
             }
         }
-        function createForm(text,id,top,left,width,height){
+        function createForm(text,top,left,width,height){
             var form=document.createElement("div");
             form.innerHTML=text;
             form.setAttribute("class","form");
-            form.setAttribute("id","form"+id.toString());
+            form.setAttribute("id","form"+nForms.toString());
             form.setAttribute("onmousedown","dragForm(this,event)");
             form.setAttribute("ondblclick","duplicate(this)");
             form.setAttribute("oncontextmenu","destroy(this,event)");
+            form.setAttribute("onclick","setBranch(this)");
             document.getElementById("field").appendChild(form);
             form.style.top=top.toString()+"%";
             form.style.left=left.toString()+"%";
             form.style.width=width.toString()+"%";
             form.style.height=height.toString()+"%";
+            nForms++;
+        }
+        function createExForm(text,top){
+            var form=document.createElement("div");
+            form.innerHTML=text;
+            form.setAttribute("class","form");
+            form.setAttribute("ondblclick","duplicateEx(this)");
+            document.getElementById("roots").appendChild(form);
+            form.style.top=(2*top+1)*3.6+"vh";
+            form.style.right="10%";
+            form.style.width="3.2vw";
+            form.style.height="3.6vh";
+        }
+        function destroyExForms(){
+            roots=document.getElementById("roots").children;
+            var len=roots.length
+            for(let i=0;i<len;i++){roots[0].remove();}
+        }
+        function duplicateEx(element){
+            createForm(element.innerHTML,0,0,4,6);
         }
         function dragForm(element,event){
             mouseDown(event);
@@ -148,12 +239,10 @@
         }
         function duplicate(element){
             createForm( element.innerHTML,
-                        nForms,
                         parseFloat(element.style.top)-5,
                         parseFloat(element.style.left)-5,
                         parseFloat(element.style.width),
                         parseFloat(element.style.height));
-            nForms++;
         }
         function destroy(element,e){
             e=e||window.event;
@@ -172,11 +261,56 @@
             nForms--;
             element.remove();
         }
+        function change(element){
+            if(element.style.backgroundColor=="rgb(68, 68, 68)"){
+                element.style.backgroundColor="#222222";
+            }else{
+                element.style.backgroundColor="#444444";
+            }
+        }
+        function setBranch(element){
+            var branch=document.getElementById("branch");
+            var go=(branch.style.backgroundColor=="rgb(34, 34, 34)");
+            if(go){
+                destroyExForms();
+                branch.innerHTML=element.innerHTML;
+                change(branch);
+                roots=findRoots(branch.innerHTML,document.getElementById("paradigm").innerHTML);
+                for(let i=0;i<roots.length;i++){
+                    createExForm(roots[i],i);
+                }
+            }
+        }
+        function resetBranch(){
+            var branch=document.getElementById("branch");
+            branch.style.visibility="hidden";
+            branch.style.backgroundColor="#444444";
+            branch.innerHTML="";
+        }
+        function findRoots(branch,paradigmHTML){
+            var paradigm=paradigmHTML.split(" -&gt; ");
+            var ans=[""];
+            for(var char of branch){
+                if(char==paradigm[1]){
+                    halfLength=ans.length;
+                    ans=[...ans,...ans];
+                    for(let i=0;i<halfLength;i++){
+                        ans[i]+=char;
+                        ans[i+halfLength]+=paradigm[0];
+                    }
+                }else{
+                    for(let i=0;i<ans.length;i++){
+                        ans[i]+=char;
+                    }
+                }
+            }
+            return ans.slice(1);
+        }
         function init(){
             var forms=["abce","ahce","fbce","agci","jgcd"];
-            nForms=forms.length;
+            nForms=0;
             forms.forEach(function(form,index,array){
-                createForm(form,index,41+12*(array.length/2-index),60,4,6);
+                createForm(form,41+12*(array.length/2-index),60,4,6);
             });
             var shifters=[["d","e"],["a","f"],["b","g"],["b","h"],["d","i"],["a","j"]];
             nShifters=shifters.length;
