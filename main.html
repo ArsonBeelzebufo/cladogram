@@ -76,6 +76,7 @@
         </style>
     </head>
     <body>
+        <canvas id="canvas" style="display:block;height:0;"></canvas>
         <div class="header">
             <img src="cobweb.png" style="   position:absolute;
                                             height:8vh;
@@ -305,6 +306,106 @@
                 }
             }
             return ans.slice(1);
+        }
+        var webbing=false;
+        var first=true;
+        var firstID,secondID;
+        function web(element){
+            if(first){
+                firstID=element.id;
+            }else{
+                secondID=element.id;
+            }first=!first;
+            if(first&firstID!=secondID){
+                var x1=parseInt(document.getElementById(firstID).style.left)+.5*parseInt(document.getElementById(firstID).style.width);
+                var y1=parseInt(document.getElementById(firstID).style.top)+.5*parseInt(document.getElementById(firstID).style.height);
+                var x2=parseInt(document.getElementById(secondID).style.left)+.5*parseInt(document.getElementById(secondID).style.width);
+                var y2=parseInt(document.getElementById(secondID).style.top)+.5*parseInt(document.getElementById(secondID).style.height);
+                var width=document.getElementById("field").offsetWidth;
+                var height=document.getElementById("field").offsetHeight;
+                var dims=getWebDims(x1,y1,x2,y2,width,height);
+                arrow=document.createElement("div");
+                arrow.style=`   font-family:courier new;
+                                font-size:2vh;
+                                color:#FFFFFF;
+                                display:flex;
+                                justify-content:center;
+                                align-items:center;
+                                -webkit-touch-callout:none; 
+                                -webkit-user-select:none;
+                                -khtml-user-select:none;
+                                -moz-user-select:none;
+                                -ms-user-select:none;
+                                user-select:none;
+                                position:absolute;
+                                height:${dims[1]}%;
+                                left:${dims[2]}%;
+                                top:${dims[3]}%;
+                                transform:rotate(${dims[4]}rad);
+                                overflow:visible;`;
+                var canvas=document.getElementById("canvas");
+                var context=canvas.getContext("2d");
+                context.font="2vh courier new";
+                arrow.innerHTML=`${'-'.repeat(Math.floor(dims[0]*width/100/context.measureText('-').width-1))}&gt;`;
+                document.getElementById("field").prepend(arrow);
+            }
+        }
+        function diagonal(angleIn,width,height){
+            var limit=Math.atan(height/width);
+            var angle=Math.abs(angleIn);
+            if(angle<limit){
+                return width/Math.cos(angle);
+            }else{
+                return height/Math.sin(angle);
+            }
+        }
+        function getWebDims(x1,y1,x2,y2,xPx,yPx){
+            var dx=xPx*(x2-x1);
+            var dy=yPx*(y2-y1);
+            var angle=Math.atan(dy/dx);
+            var width=Math.sqrt(dx**2+dy**2)-100*diagonal(angle,.04*xPx,.06*yPx);
+            var height=6*yPx;
+            var left=.5*((x1+x2)*xPx-width);
+            var top=.5*((y1+y2)*yPx-height);
+            return [width/xPx,height/yPx,left/xPx,top/yPx,angle];
+        }
+        function webmode(){
+            webbing=!webbing;
+            if(webbing){
+                resetBranch();
+                var forms=document.getElementById("field").children;
+                var shifts=document.getElementById("stick").children;
+                for(let i=0;i<shifts.length;i++){
+                    first=true;
+                    if(shifts[i].id.slice(0,6)=="button"){
+                        shifts[i].setAttribute("onclick","");
+                    }
+                }
+                for(let i=0;i<forms.length;i++){
+                    if(forms[i].id.slice(0,4)=="form"){
+                        forms[i].setAttribute("onclick","web(this)");
+                        forms[i].setAttribute("onmousedown","");
+                        forms[i].setAttribute("ondblclick","");
+                        forms[i].setAttribute("oncontextmenu","");
+                    }
+                }
+            }else{
+                var forms=document.getElementById("field").children;
+                var shifts=document.getElementById("stick").children;
+                for(let i=0;i<shifts.length;i++){
+                    if(shifts[i].id.slice(0,6)=="button"){
+                        shifts[i].setAttribute("onclick","shift(this)");
+                    }
+                }
+                for(let i=0;i<forms.length;i++){
+                    if(forms[i].id.slice(0,4)=="form"){
+                        forms[i].setAttribute("onclick","setBranch(this)");
+                        forms[i].setAttribute("onmousedown","dragForm(this,event)");
+                        forms[i].setAttribute("ondblclick","duplicate(this)");
+                        forms[i].setAttribute("oncontextmenu","destroy(this,event)");
+                    }
+                }
+            }
         }
         function init(){
             var forms=["abce","ahce","fbce","agci","jgcd"];
