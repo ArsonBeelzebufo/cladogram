@@ -132,6 +132,22 @@
                 -ms-user-select: none;
                 user-select: none;
             }
+            .arrow{
+                font-family:courier new;
+                font-size:2vh;
+                color:#FFFFFF;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                -webkit-touch-callout:none; 
+                -webkit-user-select:none;
+                -khtml-user-select:none;
+                -moz-user-select:none;
+                -ms-user-select:none;
+                user-select:none;
+                position:absolute;
+                overflow:visible;
+            }
         </style>
     </head>
 
@@ -163,20 +179,50 @@
             var limit=Math.atan(height/width);
             var angle=Math.abs(angleIn);
             if(angle<limit){
-                return width/Math.cos(angle);
+                return Math.abs(width/Math.cos(angle));
             }else{
-                return height/Math.sin(angle);
+                return Math.abs(height/Math.sin(angle));
             }
         }
         function getWebDims(x1,y1,x2,y2,xPx,yPx){
             var dx=xPx*(x2-x1);
             var dy=yPx*(y2-y1);
-            var angle=Math.atan(dy/dx);
+            var angle=Math.atan(dy/dx);if(dx<0){angle+=Math.PI;}
             var width=Math.sqrt(dx**2+dy**2)-100*diagonal(angle,.04*xPx,.06*yPx);
             var height=6*yPx;
             var left=.5*((x1+x2)*xPx-width);
             var top=.5*((y1+y2)*yPx-height);
             return [width/xPx,height/yPx,left/xPx,top/yPx,angle];
+        }
+        function createArrow(id){
+            var arrow=document.createElement("div");
+            arrow.setAttribute("id",id);
+            arrow.setAttribute("class","arrow");
+            document.getElementById("cladogram").prepend(arrow);
+            updateArrow(id);
+            nArrows++;
+        }
+        function updateArrow(id){
+            var arrow=document.getElementById(id);
+            var temp=id.slice(id.indexOf('-')+1);
+            var rootID=temp.slice(0,temp.indexOf('-'));
+            temp=temp.slice(temp.indexOf('-')+1);
+            var branchID=temp;
+            var x1=parseInt(document.getElementById(rootID).style.left)+.5*parseInt(document.getElementById(rootID).style.width);
+            var y1=parseInt(document.getElementById(rootID).style.top)+.5*parseInt(document.getElementById(rootID).style.height);
+            var x2=parseInt(document.getElementById(branchID).style.left)+.5*parseInt(document.getElementById(branchID).style.width);
+            var y2=parseInt(document.getElementById(branchID).style.top)+.5*parseInt(document.getElementById(branchID).style.height);
+            var width=document.getElementById("cladogram").offsetWidth;
+            var height=document.getElementById("cladogram").offsetHeight;
+            var dims=getWebDims(x1,y1,x2,y2,width,height);
+            arrow.style.height=`${dims[1]}%`;
+            arrow.style.left=`${dims[2]}%`;
+            arrow.style.top=`${dims[3]}%`;
+            arrow.style.transform=`rotate(${dims[4]}rad)`;
+            var canvas=document.getElementById("canvas");
+            var context=canvas.getContext("2d");
+            context.font="2vh courier new";
+            arrow.innerHTML=`${'-'.repeat(Math.ceil(dims[0]*width/100/context.measureText('-').width-1))}&gt;`;
         }
         // assembler mats
             // root mats
@@ -236,7 +282,7 @@
         }
         // shiftstick mats
         var curButton=0;
-        var nForms,nButtons;
+        var nForms,nButtons,nArrows;
         function onButtonClick(element){
             if(!inWebMode){
                 if(curButton!=0){document.getElementById("button"+curButton.toString()).style.backgroundColor="#555555";}
@@ -268,6 +314,7 @@
             document.getElementById("shiftstick").appendChild(button);
         }
         // cladogram mats
+            // form mats
         function onFormMouseDown(element,event){
             if(!inWebMode){
                 var x,y,newx,newy;
@@ -294,7 +341,9 @@
                         ||parseFloat(element.style.top)+parseFloat(element.style.height)>100)){
                             element.style.top=newy.toString()+"%";
                             element.style.left=newx.toString()+"%";
-                    }else{onMouseUp();}
+                            Array.from(document.getElementById("cladogram").children).forEach((child)=>{if(child.id.slice(0,5)=="arrow"){updateArrow(child.id)}});
+                    }
+                    else{onMouseUp();}
                 }
                 function onMouseUp(){
                     document.onmousemove=null;
@@ -337,39 +386,7 @@
                 }else{
                     branchID=element.id;
                 }isRootForm=!isRootForm;
-                if(isRootForm&rootID!=branchID){
-                    var x1=parseInt(document.getElementById(rootID).style.left)+.5*parseInt(document.getElementById(rootID).style.width);
-                    var y1=parseInt(document.getElementById(rootID).style.top)+.5*parseInt(document.getElementById(rootID).style.height);
-                    var x2=parseInt(document.getElementById(branchID).style.left)+.5*parseInt(document.getElementById(branchID).style.width);
-                    var y2=parseInt(document.getElementById(branchID).style.top)+.5*parseInt(document.getElementById(branchID).style.height);
-                    var width=document.getElementById("cladogram").offsetWidth;
-                    var height=document.getElementById("cladogram").offsetHeight;
-                    var dims=getWebDims(x1,y1,x2,y2,width,height);
-                    arrow=document.createElement("div");
-                    arrow.style=`   font-family:courier new;
-                                    font-size:2vh;
-                                    color:#FFFFFF;
-                                    display:flex;
-                                    justify-content:center;
-                                    align-items:center;
-                                    -webkit-touch-callout:none; 
-                                    -webkit-user-select:none;
-                                    -khtml-user-select:none;
-                                    -moz-user-select:none;
-                                    -ms-user-select:none;
-                                    user-select:none;
-                                    position:absolute;
-                                    height:${dims[1]}%;
-                                    left:${dims[2]}%;
-                                    top:${dims[3]}%;
-                                    transform:rotate(${dims[4]}rad);
-                                    overflow:visible;`;
-                    var canvas=document.getElementById("canvas");
-                    var context=canvas.getContext("2d");
-                    context.font="2vh courier new";
-                    arrow.innerHTML=`${'-'.repeat(Math.round(dims[0]*width/100/context.measureText('-').width-1))}&gt;`;
-                    document.getElementById("cladogram").prepend(arrow);
-                }
+                if(isRootForm&rootID!=branchID){createArrow(`arrow${nArrows}-${rootID}-${branchID}`);}
             }else{
                 var branch=document.getElementById("branch");
                 var go=(branch.style.backgroundColor=="rgb(34, 34, 34)");
@@ -400,17 +417,19 @@
             form.style.height=height.toString()+"%";
             nForms++;
         }
+        // init
         function init(){
             var forms=["abce","ahce","fbce","agci","jgcd"];
             nForms=0;
             forms.forEach(function(form,index,array){
-                createForm(form,53+12*(index-array.length/2),60,4,6);
+                createForm(form,60,52+8*(index-forms.length/2),4,6);
             });
             var buttons=[["d","e"],["a","f"],["b","g"],["b","h"],["d","i"],["a","j"]];
             nButtons=buttons.length;
             buttons.forEach(function(button,index){
                 createButton(index+1,button[0],button[1]);
             });
+            nArrows=0;
         }init();
     </script>
 </html>
